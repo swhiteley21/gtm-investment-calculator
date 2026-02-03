@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, Minus, Plus, Info } from 'lucide-react';
+import { useCurrencyFormat } from './lib/hooks/use-currency-format';
+import { CurrencySelector } from './components/currency-selector';
 
 // Type Definitions
 interface Phase {
@@ -32,6 +34,7 @@ interface Decision {
   prerequisites: Prerequisites | null;
   roiImpact: ROIImpact;
   packageType?: 'system-package' | 'supporting-service';
+  footnote?: string;
 }
 
 interface WebsiteService {
@@ -52,14 +55,14 @@ interface WebsitePages {
 
 // Decision Data
 const decisions: Decision[] = [
-  { id: 'logo', name: 'Mother Brand Logo', section: 'brand', category: 'FOUNDATION', tooltip: 'The visual symbol that represents your company. A well-designed logo builds instant recognition and trust with your audience.', phases: [{ name: 'Discovery & Research', price: 1000 }, { name: 'Exploration of 2-3 Directions', price: 1500 }, { name: 'Refinement & Delivery', price: 1500 }], prerequisites: null, roiImpact: { timeEfficiency: 5, brandValue: 1.15, brandValueType: 'multiplier', conversionLift: 4 } },
+  { id: 'brand-audit', name: 'Brand Audit', section: 'brand', category: 'STRATEGIC', tooltip: 'A comprehensive review of your current brand presence, identifying strengths, weaknesses, and opportunities for improvement.', phases: [{ name: 'Stakeholder Interviews', price: 2000 }, { name: 'Competitive Analysis', price: 1500 }, { name: 'Touchpoint Audit', price: 2000 }, { name: 'Recommendations Report', price: 1500 }], prerequisites: null, roiImpact: { timeEfficiency: 8, brandValue: 1.20, brandValueType: 'multiplier', conversionLift: 5 } },
+  { id: 'brand-architecture', name: 'Brand Architecture', section: 'brand', category: 'STRATEGIC', tooltip: 'The organisational structure of your brand portfolio—how your master brand, sub-brands, and products relate to each other.', phases: [{ name: 'Portfolio Mapping', price: 2500 }, { name: 'Architecture Options', price: 3000 }, { name: 'Stakeholder Alignment', price: 2000 }, { name: 'Implementation Roadmap', price: 2500 }], prerequisites: { required: ['brand-audit'], logic: 'AND', message: 'Requires BRAND_AUDIT completion' }, roiImpact: { timeEfficiency: 10, brandValue: 1.25, brandValueType: 'multiplier', conversionLift: 6 } },
+  { id: 'logo', name: 'Logo Design', section: 'brand', category: 'FOUNDATION', tooltip: 'The visual symbol that represents your company. A well-designed logo builds instant recognition and trust with your audience.', phases: [{ name: 'Discovery & Research', price: 1000 }, { name: 'Exploration of 2-3 Directions', price: 1500 }, { name: 'Refinement & Delivery', price: 1500 }], prerequisites: null, roiImpact: { timeEfficiency: 5, brandValue: 1.15, brandValueType: 'multiplier', conversionLift: 4 } },
   { id: 'typography', name: 'Typography System', section: 'brand', category: 'FOUNDATION', tooltip: 'A structured set of fonts and text styles that ensure consistency across all communications, from websites to business cards.', phases: [{ name: 'Audit & Analysis', price: 500 }, { name: 'Font Selection', price: 800 }, { name: 'Hierarchy Definition', price: 700 }, { name: 'Guidelines & Documentation', price: 500 }], prerequisites: null, roiImpact: { timeEfficiency: 5, brandValue: 1.08, brandValueType: 'multiplier', conversionLift: 2 } },
   { id: 'naming', name: 'Product Naming Strategy', section: 'brand', category: 'FOUNDATION', tooltip: 'Strategic development of names for products, features, or sub-brands that align with your master brand and resonate with customers.', phases: [{ name: 'Brand Architecture Review', price: 1000 }, { name: 'Name Generation', price: 1500 }, { name: 'Screening & Shortlisting', price: 1000 }, { name: 'Testing & Validation', price: 1000 }, { name: 'Final Selection & Guidelines', price: 500 }], prerequisites: null, roiImpact: { timeEfficiency: 3, brandValue: 1.12, brandValueType: 'multiplier', conversionLift: 3 } },
   { id: 'colour', name: 'Colour System', section: 'brand', category: 'FOUNDATION', tooltip: 'A defined palette of primary, secondary, and accent colours that evoke the right emotions and ensure brand consistency.', phases: [{ name: 'Colour Psychology Analysis', price: 700 }, { name: 'Palette Development', price: 1000 }, { name: 'Accessibility Testing', price: 600 }, { name: 'Application Guidelines', price: 700 }], prerequisites: null, roiImpact: { timeEfficiency: 5, brandValue: 1.10, brandValueType: 'multiplier', conversionLift: 4 } },
-  { id: 'brand-audit', name: 'Brand Audit', section: 'brand', category: 'STRATEGIC', tooltip: 'A comprehensive review of your current brand presence, identifying strengths, weaknesses, and opportunities for improvement.', phases: [{ name: 'Stakeholder Interviews', price: 2000 }, { name: 'Competitive Analysis', price: 1500 }, { name: 'Touchpoint Audit', price: 2000 }, { name: 'Recommendations Report', price: 1500 }], prerequisites: null, roiImpact: { timeEfficiency: 8, brandValue: 1.20, brandValueType: 'multiplier', conversionLift: 5 } },
-  { id: 'brand-architecture', name: 'Brand Architecture', section: 'brand', category: 'STRATEGIC', tooltip: 'The organisational structure of your brand portfolio—how your master brand, sub-brands, and products relate to each other.', phases: [{ name: 'Portfolio Mapping', price: 2500 }, { name: 'Architecture Options', price: 3000 }, { name: 'Stakeholder Alignment', price: 2000 }, { name: 'Implementation Roadmap', price: 2500 }], prerequisites: { required: ['brand-audit'], logic: 'AND', message: 'Requires BRAND_AUDIT completion' }, roiImpact: { timeEfficiency: 10, brandValue: 1.25, brandValueType: 'multiplier', conversionLift: 6 } },
   { id: 'visual-language', name: 'Visual Language & Iconography', section: 'brand', category: 'APPLICATION', tooltip: 'The complete visual toolkit including icons, illustrations, and imagery guidelines that make your brand instantly recognisable.', phases: [{ name: 'Visual Audit', price: 3000 }, { name: 'Style Definition', price: 4000 }, { name: 'Icon Library Creation', price: 4000 }, { name: 'Guidelines & Templates', price: 3000 }], prerequisites: { required: ['logo', 'typography', 'colour'], logic: 'AND', message: 'Requires LOGO, TYPOGRAPHY, COLOUR' }, roiImpact: { timeEfficiency: 8, brandValue: 50000, brandValueType: 'fixed', conversionLift: 12 } },
-  { id: 'marketing-collateral', name: 'Marketing Collateral System', section: 'brand', category: 'APPLICATION', tooltip: 'Templated systems for presentations, brochures, social media, and other marketing materials that stay on-brand.', phases: [{ name: 'Needs Assessment', price: 2500 }, { name: 'Template Design', price: 6000 }, { name: 'Template Build', price: 4000 }, { name: 'Training & Handover', price: 2500 }], prerequisites: { required: ['logo', 'typography', 'colour'], logic: 'AND', message: 'Requires LOGO, TYPOGRAPHY, COLOUR' }, roiImpact: { timeEfficiency: 7, brandValue: 35000, brandValueType: 'fixed', conversionLift: 7 } },
+  { id: 'marketing-collateral', name: 'Marketing Collateral System', section: 'brand', category: 'APPLICATION', tooltip: 'Templated systems for presentations, brochures, social media, and other marketing materials that stay on-brand.', phases: [{ name: 'Needs Assessment', price: 2500 }, { name: 'Template Design', price: 6000 }, { name: 'Template Build', price: 4000 }, { name: 'Training & Handover', price: 2500 }], prerequisites: { required: ['logo', 'typography', 'colour'], logic: 'AND', message: 'Requires LOGO, TYPOGRAPHY, COLOUR' }, roiImpact: { timeEfficiency: 7, brandValue: 35000, brandValueType: 'fixed', conversionLift: 7 }, footnote: 'Note: Total price is subject to change depending on a "Needs assessment"' },
   { id: 'health-check', name: 'Design System Health Check', section: 'interface', category: 'PACKAGE', packageType: 'system-package', tooltip: 'A diagnostic audit of your existing design system, identifying inconsistencies, gaps, and quick wins for improvement.', phases: [{ name: 'System Intake', price: 2000 }, { name: 'Component Review', price: 4000 }, { name: 'Token & Accessibility Scan', price: 3000 }, { name: 'Improvement Plan', price: 3000 }], prerequisites: null, roiImpact: { timeEfficiency: 15, brandValue: 1.02, brandValueType: 'multiplier', conversionLift: 5 } },
   { id: 'refresh', name: 'Design System Refresh', section: 'interface', category: 'PACKAGE', packageType: 'system-package', tooltip: 'Modernisation of your existing design system—updating tokens, normalising components, and improving documentation.', phases: [{ name: 'Foundation Token Redesign', price: 8000 }, { name: 'Component Normalization', price: 12000 }, { name: 'Accessibility Improvements', price: 6000 }, { name: 'Documentation Update', price: 5000 }, { name: 'Design-Code Alignment', price: 4000 }, { name: 'Team Training', price: 3000 }], prerequisites: { required: ['health-check'], logic: 'AND', message: 'Requires HEALTH_CHECK' }, roiImpact: { timeEfficiency: 25, brandValue: 1.05, brandValueType: 'multiplier', conversionLift: 10 } },
   { id: 'migration', name: 'Design System Migration', section: 'interface', category: 'PACKAGE', packageType: 'system-package', tooltip: 'Complete overhaul of your design system—new architecture, rebuilt components, and full governance setup.', phases: [{ name: 'Discovery & Planning', price: 10000 }, { name: 'Full System Audit', price: 8000 }, { name: 'Token System Redesign', price: 12000 }, { name: 'Component Rebuild', price: 25000 }, { name: 'Migration Execution', price: 10000 }, { name: 'Governance Setup', price: 6000 }], prerequisites: { required: ['health-check'], logic: 'AND', message: 'Requires HEALTH_CHECK' }, roiImpact: { timeEfficiency: 40, brandValue: 1.08, brandValueType: 'multiplier', conversionLift: 15 } },
@@ -101,7 +104,6 @@ const getTierInfo = (pages: number): TierInfo => {
 };
 
 const systemPackageIds = ['health-check', 'refresh', 'migration'];
-const formatCurrency = (amount: number): string => amount === 0 ? '—' : `£${amount.toLocaleString()}`;
 
 const Tooltip = ({ content }: { content: string }) => {
   const [show, setShow] = useState(false);
@@ -133,9 +135,10 @@ interface DataRowProps {
   prerequisiteMessage: string;
   expanded: boolean;
   onExpandToggle: () => void;
+  formatCurrency: (amount: number) => string;
 }
 
-const DataRow = ({ index, decision, isActive, onToggle, showPrerequisite, prerequisiteMessage, expanded, onExpandToggle }: DataRowProps) => {
+const DataRow = ({ index, decision, isActive, onToggle, showPrerequisite, prerequisiteMessage, expanded, onExpandToggle, formatCurrency }: DataRowProps) => {
   const total = decision.phases.reduce((sum: number, p: Phase) => sum + p.price, 0);
   return (
     <>
@@ -191,6 +194,11 @@ const DataRow = ({ index, decision, isActive, onToggle, showPrerequisite, prereq
                 <span className="font-mono text-xs text-[#1F1E24]">SUBTOTAL</span>
                 <span className="font-mono text-sm text-[#1F1E24]">{formatCurrency(total)}</span>
               </div>
+              {decision.footnote && (
+                <div className="mt-3 pt-3 border-t border-[#1F1E24]">
+                  <p className="text-xs text-[#1F1E24] italic">{decision.footnote}</p>
+                </div>
+              )}
             </div>
           </td>
         </tr>
@@ -206,9 +214,10 @@ interface WebsiteServiceRowProps {
   onPagesChange: (pages: number) => void;
   isActive: boolean;
   price: number;
+  formatCurrency: (amount: number) => string;
 }
 
-const WebsiteServiceRow = ({ index, service, pages, onPagesChange, isActive, price }: WebsiteServiceRowProps) => {
+const WebsiteServiceRow = ({ index, service, pages, onPagesChange, isActive, price, formatCurrency }: WebsiteServiceRowProps) => {
   const tierInfo = getTierInfo(pages);
   return (
     <tr className={`border-b border-[#1F1E24] transition-colors ${isActive ? 'bg-[#f5f5f5]' : 'hover:bg-gray-50'}`}>
@@ -244,6 +253,7 @@ const WebsiteServiceRow = ({ index, service, pages, onPagesChange, isActive, pri
 };
 
 export default function DesignInvestmentCalculator() {
+  const { format: formatCurrency } = useCurrencyFormat();
   const [activeDecisions, setActiveDecisions] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [websitePages, setWebsitePages] = useState<WebsitePages>({ 'visual-design': 0, 'development': 0 });
@@ -328,7 +338,10 @@ export default function DesignInvestmentCalculator() {
           <span className="font-mono text-[10px] text-[#1F1E24]">|</span>
           <span className="font-mono text-[10px] text-[#1F1E24]">{activeDecisions.size} ITEMS SELECTED</span>
         </div>
-        <div className="font-mono text-[10px] text-[#1F1E24]">v2.0.0</div>
+        <div className="flex items-center gap-4">
+          <CurrencySelector />
+          <span className="font-mono text-[10px] text-[#1F1E24]">v2.0.0</span>
+        </div>
       </div>
 
       <div className="flex">
@@ -353,7 +366,7 @@ export default function DesignInvestmentCalculator() {
                 {brandDecisions.map((decision, idx) => {
                   const isActive = activeDecisions.has(decision.id);
                   const prereq = checkPrerequisites(decision);
-                  return <DataRow key={decision.id} index={idx + 1} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} />;
+                  return <DataRow key={decision.id} index={idx + 1} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} formatCurrency={formatCurrency} />;
                 })}
               </tbody>
             </table>
@@ -382,7 +395,7 @@ export default function DesignInvestmentCalculator() {
                 {interfaceDecisions.filter(d => d.packageType === 'system-package').map((decision, idx) => {
                   const isActive = activeDecisions.has(decision.id);
                   const prereq = checkPrerequisites(decision);
-                  return <DataRow key={decision.id} index={idx + 1} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} />;
+                  return <DataRow key={decision.id} index={idx + 1} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} formatCurrency={formatCurrency} />;
                 })}
                 <tr className="border-b border-[#1F1E24]" style={{ backgroundColor: '#1F1E24' }}>
                   <td colSpan={5} className="py-2 px-6">
@@ -392,7 +405,7 @@ export default function DesignInvestmentCalculator() {
                 {interfaceDecisions.filter(d => d.packageType === 'supporting-service').map((decision, idx) => {
                   const isActive = activeDecisions.has(decision.id);
                   const prereq = checkPrerequisites(decision);
-                  return <DataRow key={decision.id} index={idx + 4} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} />;
+                  return <DataRow key={decision.id} index={idx + 4} decision={decision} isActive={isActive} onToggle={() => handleToggle(decision.id)} showPrerequisite={isActive && prereq.show} prerequisiteMessage={prereq.message} expanded={expandedRows.has(decision.id)} onExpandToggle={() => toggleExpand(decision.id)} formatCurrency={formatCurrency} />;
                 })}
               </tbody>
             </table>
@@ -422,7 +435,7 @@ export default function DesignInvestmentCalculator() {
                 {websiteServices.map((service, idx) => {
                   const pages = websitePages[service.id as keyof WebsitePages];
                   const price = service.id === 'visual-design' ? calculateVisualDesignPrice(pages) : calculateDevelopmentPrice(pages);
-                  return <WebsiteServiceRow key={service.id} index={idx + 1} service={service} pages={pages} onPagesChange={(p: number) => updateWebsitePages(service.id as keyof WebsitePages, p)} isActive={pages > 0} price={price} />;
+                  return <WebsiteServiceRow key={service.id} index={idx + 1} service={service} pages={pages} onPagesChange={(p: number) => updateWebsitePages(service.id as keyof WebsitePages, p)} isActive={pages > 0} price={price} formatCurrency={formatCurrency} />;
                 })}
               </tbody>
             </table>
